@@ -6,10 +6,13 @@ from datetime import datetime
 class Menu(BaseModel):
     name: str
     price: int
-    group: int
+    coupon: int
+    group_id: int
+    soldout: bool
 
 class Trsc(BaseModel):
-    order_id: str = Field(default_factory=lambda: str(uuid.uuid4())) # 고유 주문 번호
+    order_id: str
+    group_id: int
     menu_name: str
     table_number: int
     payment_method: Literal['현금', '쿠폰']
@@ -19,6 +22,19 @@ class Trsc(BaseModel):
 
 # 주문 클라이언트로부터 받을 데이터 모델
 class TrscCreate(BaseModel):
+    group_id: int
     menu_name: str
     table_number: int
     payment_method: Literal['현금', '쿠폰']
+
+
+def read_menu():
+    menu_list = []
+    with open("../menu.txt", 'r') as menupage:
+        for line in menupage:
+            if line.strip().startswith('#') or not line.strip():
+                continue
+            tmp = line.split(',')
+            each_menu = Menu(name=tmp[0], price=tmp[1], coupon=tmp[2], group_id=tmp[3], soldout=tmp[4])
+            menu_list.append(each_menu)
+    return menu_list
