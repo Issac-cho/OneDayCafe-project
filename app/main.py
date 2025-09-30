@@ -8,12 +8,11 @@ from .crud import *
 
 app = FastAPI()
 
-templates = Jinja2Templates(directory="templates")
+@app.on_event("startup")
+def on_startup():
+    init_db()
 
-class Board(BaseModel):
-    title: str
-    contents: str
-    name: str
+templates = Jinja2Templates(directory="templates")
 
 class ConnectionManager:
     def __init__(self):
@@ -47,13 +46,13 @@ def order_page_form(request: Request):
 @app.get("/kitchen/{group_id}", response_class=HTMLResponse)
 def kitchen_page_form(request: Request, group_id: str):
     trsc_list = get_group_trscs(group_id)
-    return templates.TemplateResponse("kitchen.html", {"request": request, "menulist": trsc_list})
+    return templates.TemplateResponse("kitchen.html", {"request": request, "trsclist": trsc_list})
 
 # |GET|/central|중앙 WebClient에게 central.html 페이지를 렌더링하여 반환합니다.|
 @app.get("/central", response_class=HTMLResponse)
 def central_page_form(request: Request):
     trsc_list = get_all_trscs()
-    return templates.TemplateResponse("kitchen.html", {"request": request, "menulist": trsc_list})
+    return templates.TemplateResponse("kitchen.html", {"request": request, "trsclist": trsc_list})
 
 # |POST|/api/order|주문 WebClient로부터 새 주문을 받아 DB에 추가하고, 웹소켓을 통해 연결된 클라이언트에게 모두 브로드캐스트합니다.|
 @app.post("/api/order")
@@ -68,17 +67,6 @@ async def create_order(trsc_data: TrscCreate):
     
     # 3. 요청한 클라이언트에게는 HTTP로 직접 응답
     return {"message": "Order created successfully", "order_id": next_order_id}
-
-# 웹소켓은 연결 및 방송 수신만 담당
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            # 클라이언트로부터 메시지를 받을 수는 있지만, 이 구조에선 사용하지 않음
-            await websocket.receive_text()
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
 
 # |PATCH|/api/trsc/{order_id}/cook|요리 WebClient로부터 요리 완료 요청을 받아 DB를 수정하고, 웹소켓을 통해 연결된 클라이언트에게 모두 브로드캐스트합니다.|
 @app.patch("/api/trsc/{order_id}/cook")
@@ -97,3 +85,13 @@ async def serve_success(order_id:str):
     all_trscs = get_all_trscs()
     await manager.broadcast({"type": "update", "data": [trsc.model_dump() for trsc in all_trscs]})
     return {"message": "Serve successfully"}
+
+# 웹소켓은 연결 및 방송 수신만 담당
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)

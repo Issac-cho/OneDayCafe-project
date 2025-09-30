@@ -17,6 +17,7 @@ def init_db():
     conn.execute('''
         CREATE TABLE IF NOT EXISTS trsc (
             order_id TEXT PRIMARY KEY,
+            group_id INTEGER NOT NULL,
             menu_name TEXT NOT NULL,
             table_number INTEGER NOT NULL,
             payment_method TEXT NOT NULL,
@@ -25,7 +26,7 @@ def init_db():
             is_served BOOLEAN NOT NULL
         )
     ''')
-    conn.execut('''
+    conn.execute('''
         CREATE TABLE IF NOT EXISTS order_counter (
             last_id INTEGER
         )
@@ -115,6 +116,23 @@ def delete_trsc(order_id: str):
     conn.execute('DELETE FROM trsc WHERE order_id = ?', (order_id,))
     conn.commit()
     conn.close()
+
+def read_menu() -> list[Menu]:
+    menu_list = []
+    with open("menu.txt", 'r', encoding='utf-8') as menupage:
+        for line in menupage:
+            if line.strip().startswith('#') or not line.strip():
+                continue
+            tmp = [item.strip() for item in line.split(',')]
+            each_menu = Menu(
+                name=tmp[0],
+                price=int(tmp[1]),
+                coupon=int(tmp[2]),
+                group_id=int(tmp[3]),
+                soldout=(tmp[4].lower() == 'true')
+            )
+            menu_list.append(each_menu)
+    return menu_list
 
 if __name__ == "__main__":
     init_db()

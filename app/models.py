@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from typing import Literal
-import uuid
 from datetime import datetime
 
 class Menu(BaseModel):
@@ -26,15 +25,3 @@ class TrscCreate(BaseModel):
     menu_name: str
     table_number: int
     payment_method: Literal['현금', '쿠폰']
-
-
-def read_menu():
-    menu_list = []
-    with open("../menu.txt", 'r') as menupage:
-        for line in menupage:
-            if line.strip().startswith('#') or not line.strip():
-                continue
-            tmp = line.split(',')
-            each_menu = Menu(name=tmp[0], price=tmp[1], coupon=tmp[2], group_id=tmp[3], soldout=tmp[4])
-            menu_list.append(each_menu)
-    return menu_list
