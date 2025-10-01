@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일일카페 관리 시스템</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f9;
+        }
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 40px 60px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            /* NOTE: 너비와 최소 너비를 설정해 유연하게 크기 조절 */
+            width: 90%;
+            max-width: 400px; 
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.0em; /* NOTE: em 단위로 변경하여 유연성 확보 */
+        }
+        .nav-button {
+            display: block;
+            /* NOTE: 너비를 100%로 설정해 컨테이너에 꽉 차게 변경 */
+            width: 100%;
+            padding: 15px;
+            margin: 15px 0; /* NOTE: 좌우 마진 제거 */
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-sizing: border-box; /* NOTE: 패딩과 테두리를 너비에 포함 */
+        }
+        .nav-button:hover {
+            background-color: #0056b3;
+        }
+        .kitchen-nav {
+            display: flex; /* 입력창과 버튼을 한 줄에 배치 */
+            gap: 10px; /* 요소 사이의 간격 */
+            margin: 15px 0;
+        }
+        #kitchen-group-id {
+            flex-grow: 1; /* 입력창이 남은 공간을 모두 차지하도록 */
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            text-align: center; /* 숫자 가운데 정렬 */
+        }
+        #kitchen-go-btn {
+            padding: 15px 20px;
+            background-color: #28a745; /* 초록색 배경 */
+            /*flex-shrink: 0; /* 버튼 크기 줄어들지 않게 */
+        }
+        #kitchen-go-btn:hover {
+            background-color: #218838;
+        }
+
+        /* FIX: 화면 너비가 600px 이하일 때 적용될 스타일 (모바일용) */
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px; /* 좌우 패딩을 줄여 여백 확보 */
+                width: 90%;
+            }
+
+            h1 {
+                font-size: 1.8em; /* 제목 글자 크기 살짝 줄임 */
+            }
+
+            .nav-button {
+                padding: 12px;
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>☕ 일일카페 주문 시스템</h1>
+        <a href="/order" class="nav-button">📝 주문 페이지</a>
+        <div class="kitchen-nav">
+            <button id="kitchen-go-btn" class="nav-button" onclick="goToKitchen()">🍳 주방 페이지</button>
+            <input type="number" id="kitchen-group-id" placeholder="주방 번호 입력" min="1">
+        </div>
+        <a href="/central" class="nav-button">📊 중앙 관리 페이지</a>
+    </div>
+    <script>
+        function goToKitchen() {
+            const groupIdInput = document.getElementById('kitchen-group-id');
+            const groupId = groupIdInput.value;
+
+            // 입력값이 있는지, 0보다 큰 숫자인지 확인
+            if (groupId && parseInt(groupId) > 0) {
+                // 입력된 번호를 포함한 URL로 페이지 이동
+                window.location.href = '/kitchen/' + groupId;
+            } else {
+                alert('유효한 주방 번호를 입력해주세요.');
+                groupIdInput.focus(); // 입력창에 다시 포커스
+            }
+        }
+
+        // Enter 키를 눌러도 이동 가능하도록 이벤트 리스너 추가
+        document.getElementById('kitchen-group-id').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                goToKitchen();
+            }
+        });
+    </script>
+</body>
+</html>

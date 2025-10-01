@@ -1,7 +1,7 @@
 # app/crud.py
 
 import sqlite3
-from models import Trsc, Menu # Pydantic 모델 임포트
+from .models import Trsc, Menu # Pydantic 모델 임포트
 
 DATABASE_FILE = "cafe.db"
 
@@ -45,24 +45,33 @@ def get_next_order_id() -> str:
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # 트랜잭션 시작: 다른 요청이 동시에 접근하지 못하도록 lock을 겁니다.
     cursor.execute("BEGIN IMMEDIATE")
     try:
-        # 1. 현재 마지막 번호를 가져옵니다.
         cursor.execute("SELECT last_id FROM order_counter")
         last_id = cursor.fetchone()[0]
-
-        # 2. 다음 번호를 계산합니다.
         next_id = last_id + 1
-
-        # 3. DB에 다음 번호를 업데이트합니다.
         cursor.execute("UPDATE order_counter SET last_id = ?", (next_id,))
-
-        # 4. 트랜잭션을 완료(commit)합니다.
         conn.commit()
+        return f"{next_id:05d}"
 
-        # 5. 네 자리 문자열 형식(예: 0001, 0332)으로 만들어 반환합니다.
-        return f"{next_id:04d}"
+    except Exception as e:
+        conn.rollback() # 오류 발생 시 원상 복구
+        raise e
+    finally:
+        conn.close()
+
+def get_next_trsc_id() -> str:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("BEGIN IMMEDIATE")
+    try:
+        cursor.execute("SELECT last_id FROM order_counter")
+        last_id = cursor.fetchone()[0]
+        next_id = last_id + 1
+        cursor.execute("UPDATE order_counter SET last_id = ?", (next_id,))
+        conn.commit()
+        return f"{next_id:05d}"
 
     except Exception as e:
         conn.rollback() # 오류 발생 시 원상 복구

@@ -52,7 +52,7 @@ def kitchen_page_form(request: Request, group_id: str):
 @app.get("/central", response_class=HTMLResponse)
 def central_page_form(request: Request):
     trsc_list = get_all_trscs()
-    return templates.TemplateResponse("kitchen.html", {"request": request, "trsclist": trsc_list})
+    return templates.TemplateResponse("central.html", {"request": request, "trsclist": trsc_list})
 
 # |POST|/api/order|주문 WebClient로부터 새 주문을 받아 DB에 추가하고, 웹소켓을 통해 연결된 클라이언트에게 모두 브로드캐스트합니다.|
 @app.post("/api/order")

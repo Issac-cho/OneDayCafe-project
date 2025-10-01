@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메뉴 주문</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        .payment-options {
+            display: flex;
+            gap: 15px;
+        }
+        .payment-options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: normal;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        /* 품절된 메뉴 스타일 */
+        option:disabled {
+            color: #aaa;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 메뉴 주문하기</h1>
+        <form id="order-form">
+            <div class="form-group">
+                <label for="menu-select">메뉴 선택</label>
+                <select id="menu-select" name="menu_name" required>
+                    <option value="" disabled selected>-- 주문할 메뉴를 선택하세요 --</option>
+                    {% for menu in menulist %}
+                        <option value="{{ menu.name }}" data-group-id="{{ menu.group_id }}" {% if menu.soldout %}disabled{% endif %}>
+                            {{ menu.name }} ({{ menu.price }}원) {% if menu.soldout %}- 품절{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="table-number">테이블 번호</label>
+                <input type="number" id="table-number" name="table_number" min="1" required>
+            </div>
+
+            <div class="form-group">
+                <label>결제 방식</label>
+                <div class="payment-options">
+                    <label>
+                        <input type="radio" name="payment_method" value="현금" checked> 현금
+                    </label>
+                    <label>
+                        <input type="radio" name="payment_method" value="쿠폰"> 쿠폰
+                    </label>
+                </div>
+            </div>
+            <button type="submit">주문하기</button>
+        </form>
+    </div>
+
+    <script>
+        // form 요소를 찾아서 submit 이벤트를 감지합니다.
+        document.getElementById('order-form').addEventListener('submit', function(event) {
+            // 1. form의 기본 제출 동작(새로고침)을 막습니다.
+            event.preventDefault();
+
+            const menuSelect = document.getElementById('menu-select');
+            const selectedOption = menuSelect.options[menuSelect.selectedIndex];
+
+            // 2. 폼에서 입력된 값들을 가져옵니다.
+            const orderData = {
+                menu_name: selectedOption.value,
+                group_id: parseInt(selectedOption.getAttribute('data-group-id')),
+                table_number: parseInt(document.getElementById('table-number').value),
+                payment_method: document.querySelector('input[name="payment_method"]:checked').value
+            };
+            
+            // 3. fetch API를 사용해 서버의 /api/order 경로로 데이터를 POST 요청으로 보냅니다.
+            fetch('/api/order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 4. 서버로부터 응답을 받으면 성공 메시지를 띄웁니다.
+                alert(`주문이 성공적으로 접수되었습니다. (주문번호: ${data.order_id})`);
+                // 주문 후 폼 초기화
+                document.getElementById('order-form').reset();
+            })
+            .catch((error) => {
+                // 5. 요청 중 에러가 발생하면 콘솔에 에러를 출력하고 알림을 띄웁니다.
+                console.error('Error:', error);
+                alert('주문 접수 중 오류가 발생했습니다.');
+            });
+        });
+    </script>
+</body>
+</html>
