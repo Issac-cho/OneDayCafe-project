@@ -9,6 +9,24 @@ class Menu(BaseModel):
     group_id: int
     soldout: bool
 
+
+class Order:
+    order_id: str
+    group_id: int
+    menu_name: str
+    count: int
+    is_cooked: bool = False
+    is_served: bool = False
+
+
+class Trsc(BaseModel):
+    trsc_id: str
+    orders: list[Order]
+    table_number: int
+    payment_method: Literal['현금', '쿠폰']
+    order_time: datetime = Field(default_factory=datetime.now)
+
+
 class Trsc(BaseModel):
     order_id: str
     group_id: int
