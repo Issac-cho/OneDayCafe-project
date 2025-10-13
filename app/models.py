@@ -10,10 +10,10 @@ class Menu(BaseModel):
     soldout: bool
 
 
-class Order:
+class Order(BaseModel):
     order_id: str
-    group_id: int
     menu_name: str
+    group_id: int
     count: int
     is_cooked: bool = False
     is_served: bool = False
@@ -22,7 +22,7 @@ class Order:
 class Trsc(BaseModel):
     trsc_id: str
     orders: list[Order]
-    table_number: int
+    table_num: int
     payment_method: Literal['현금', '쿠폰']
     order_time: datetime = Field(default_factory=datetime.now)
 

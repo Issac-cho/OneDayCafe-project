@@ -1,7 +1,7 @@
 # app/crud.py
 
 import sqlite3
-from .models import Trsc, Menu # Pydantic 모델 임포트
+from .models import Order, Trsc, Menu # Pydantic 모델 임포트
 
 DATABASE_FILE = "cafe.db"
 
@@ -16,19 +16,28 @@ def init_db():
     conn = get_db_connection()
     conn.execute('''
         CREATE TABLE IF NOT EXISTS trsc (
-            order_id TEXT PRIMARY KEY,
-            group_id INTEGER NOT NULL,
-            menu_name TEXT NOT NULL,
-            table_number INTEGER NOT NULL,
+            trsc_id TEXT PRIMARY KEY,
+            menu_num INTEGER NOT NULL,
+            table_num INTEGER NOT NULL,
             payment_method TEXT NOT NULL,
-            order_time TEXT NOT NULL,
-            is_cooked BOOLEAN NOT NULL,
-            is_served BOOLEAN NOT NULL
+            order_time TEXT NOT NULL
+        )
+    ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS order (
+            trsc_id TEXT NOT NULL,
+            order_id TEXT NOT NULL,
+            menu_name TEXT NOT NULL,
+            group_id INTEGER NOT NULL,
+            count INTEGER NOT NULL,     
+            is_cooked BOOL FALSE,
+            is_served BOOL FALSE
         )
     ''')
     conn.execute('''
         CREATE TABLE IF NOT EXISTS order_counter (
-            last_id INTEGER
+            last_trsc_id INTEGER
+            last_order_id INTEGER
         )
     ''')
     cursor = conn.cursor()
@@ -47,12 +56,12 @@ def get_next_order_id() -> str:
 
     cursor.execute("BEGIN IMMEDIATE")
     try:
-        cursor.execute("SELECT last_id FROM order_counter")
-        last_id = cursor.fetchone()[0]
-        next_id = last_id + 1
-        cursor.execute("UPDATE order_counter SET last_id = ?", (next_id,))
+        cursor.execute("SELECT last_order_id FROM order_counter")
+        last_order_id = cursor.fetchone()[0]
+        next_order_id = last_order_id + 1
+        cursor.execute("UPDATE order_counter SET last_order_id = ?", (next_order_id,))
         conn.commit()
-        return f"{next_id:05d}"
+        return f"{next_order_id:02d}"
 
     except Exception as e:
         conn.rollback() # 오류 발생 시 원상 복구
@@ -66,12 +75,12 @@ def get_next_trsc_id() -> str:
 
     cursor.execute("BEGIN IMMEDIATE")
     try:
-        cursor.execute("SELECT last_id FROM order_counter")
-        last_id = cursor.fetchone()[0]
-        next_id = last_id + 1
-        cursor.execute("UPDATE order_counter SET last_id = ?", (next_id,))
+        cursor.execute("SELECT last_trsc_id FROM order_counter")
+        last_trsc_id = cursor.fetchone()[0]
+        next_trsc_id = last_trsc_id + 1
+        cursor.execute("UPDATE order_counter SET last_trsc_id = ?, last_order_id = 0", (next_trsc_id,))
         conn.commit()
-        return f"{next_id:05d}"
+        return f"{next_trsc_id:05d}"
 
     except Exception as e:
         conn.rollback() # 오류 발생 시 원상 복구
@@ -84,27 +93,34 @@ def get_next_trsc_id() -> str:
 def create_trsc(trsc: Trsc):
     """새로운 주문(Trsc)을 DB에 추가 (Create)"""
     conn = get_db_connection()
-    conn.execute(
-        'INSERT INTO trsc (order_id, group_id, menu_name, table_number, payment_method, order_time, is_cooked, is_served) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        (trsc.order_id, trsc.group_id, trsc.menu_name, trsc.table_number, trsc.payment_method, trsc.order_time.isoformat(), trsc.is_cooked, trsc.is_served)
+    conn.execute('''
+        INSERT INTO trsc (trsc_id, menu_num, table_num, payment_method, order_time)
+        VALUES (?,?,?,?,?)
+        ''', (trsc.trsc_id, len(trsc.orders), trsc.table_num, trsc.payment_method, trsc.order_time)
     )
+    for od in trsc.orders:
+        conn.execute('''
+            INSERT INTO order (trsc_id, order_id, menu_name, group_id, count, is_cooked, is_served)
+            VALUES (?,?,?,?,?,?,?)
+        ''', (trsc.trsc_id, od.order_id, od.menu_name, od.group_id, od.count, od.is_cooked, od.is_served)
+        )
     conn.commit()
     conn.close()
 
-def get_all_trscs() -> list[Trsc]:
+def get_all_orders() -> list[Order]:
     """모든 주문 목록을 DB에서 조회 (Read)"""
     conn = get_db_connection()
     trsc_rows = conn.execute('SELECT * FROM trsc WHERE is_served = False').fetchall()
     conn.close()
     # DB에서 가져온 데이터를 Pydantic 모델 객체 리스트로 변환하여 반환
-    return [Trsc(**row) for row in trsc_rows]
+    return [Order(**row) for row in trsc_rows]
 
-def get_group_trscs(group_id:int) -> list[Trsc]:
+def get_group_orders(group_id:int) -> list[Order]:
     conn = get_db_connection()
     sql = 'SELECT * FROM trsc WHERE group_id = ? AND is_served = False'
     trsc_rows = conn.execute(sql, (group_id,)).fetchall()
     conn.close()
-    return [Trsc(**row) for row in trsc_rows]
+    return [Order(**row) for row in trsc_rows]
 
 def update_trsc_cooked_status(order_id: str):
     """특정 주문의 요리 완료 상태를 True로 변경 (Update)"""
